@@ -11,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,12 +27,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddIcCall
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PermPhoneMsg
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Web
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -51,17 +56,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.zimneos.scan2contact.R
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
@@ -69,17 +77,8 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.zimneos.scan2contact.R
 import kotlinx.coroutines.launch
-
-
-@Composable
-private fun InfoText(label: String, value: String) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Text(text = label, color = Color.Black, style = MaterialTheme.typography.bodyLarge)
-        Text(text = value, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
 
 @Composable
 fun DocumentScannerScreen() {
@@ -91,6 +90,7 @@ fun DocumentScannerScreen() {
     val extractedText = remember { mutableStateOf<Map<String, String>?>(null) }
     val isScanning = remember { mutableStateOf(true) }
     val showDialog = remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(scannedImageUri) {
         scannedImageUri?.let {
@@ -127,11 +127,13 @@ fun DocumentScannerScreen() {
                 bottomBar = {
                     BottomNavigationBar(
                         onCameraClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             startDocumentScan(context) { intentSenderRequest ->
                                 scannerLauncher.launch(intentSenderRequest)
                             }
                         },
                         onPhoneClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             extractedText.value?.let { contactInfo ->
                                 contactInfo["Phone"]?.let { phoneNumber ->
                                     makePhoneCall(context, phoneNumber)
@@ -139,6 +141,7 @@ fun DocumentScannerScreen() {
                             }
                         },
                         onChatClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             extractedText.value?.let { contactInfo ->
                                 contactInfo["Phone"]?.let { phoneNumber ->
                                     openChat(context, phoneNumber)
@@ -146,11 +149,13 @@ fun DocumentScannerScreen() {
                             }
                         },
                         onContactsClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             scope.launch {
                                 showDialog.value = true
                             }
                         },
                         onShareClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             extractedText.value?.let { contactInfo ->
                                 shareContact(context, contactInfo)
                             }
@@ -174,29 +179,38 @@ fun DocumentScannerScreen() {
                 ) {
                     item {
                         if (showDialog.value) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             extractedText.value?.let { contactInfo ->
                                 SaveContactDialog(contactInfo, context, showDialog)
                             }
                         }
                     }
                     item {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            fontFamily = customFont,
-                            color = Color.DarkGray,
-                            lineHeight = 48.sp,
-                            fontSize = 58.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(2.dp, Color.Gray, RoundedCornerShape(1.dp))
-                                .background(Color.LightGray)
-                        )
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(6.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFF6730)),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    text = stringResource(R.string.app_name),
+                                    fontFamily = customFont,
+                                    color = Color.White,
+                                    fontSize = 42.sp,
+                                    letterSpacing = 1.7.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                     item {
                         Spacer(modifier = Modifier.height(24.dp))
-                    }
-                    item {
                         scannedImageUri?.let {
                             Image(
                                 painter = rememberAsyncImagePainter(it),
@@ -207,55 +221,53 @@ fun DocumentScannerScreen() {
                                     .height(200.dp)
                                     .aspectRatio(16 / 9f)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .border(2.dp, Color.Gray, RoundedCornerShape(8.dp))
+                                    .border(2.dp,  Color(0xFFFF6730), RoundedCornerShape(8.dp))
                             )
                         }
                     }
 
-
                     val extractedData = extractedText.value ?: emptyMap()
 
-                    if (scannedImageUri == null) {
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
-                        item { InfoText(label = "Name:", value = "Name will show here") }
-                        item { InfoText(label = "Phone:", value = "Phone number will show here") }
-                        item {
-                            InfoText(
-                                label = "Secondary Phone:",
-                                value = "Secondary Phone number will show here"
-                            )
+                    when {
+                        scannedImageUri == null -> {
+                            item { Spacer(modifier = Modifier.height(16.dp)) }
+                            item { InfoCard(label = "Name:", value = "Name will show here", icon = Icons.Default.Person) }
+                            item { InfoCard(label = "Phone:", value = "Phone number will show here", icon = Icons.Default.Phone) }
+                            item { InfoCard(label = "Secondary Phone:", value = "Secondary Phone number will show here", icon = Icons.Default.PermPhoneMsg) }
+                            item { InfoCard(label = "Tertiary Phone:", value = "Tertiary Phone number will show here", icon = Icons.Default.AddIcCall) }
+                            item { InfoCard(label = "Email:", value = "Email will show here", icon = Icons.Default.Email) }
+                            item { InfoCard(label = "Address:", value = "Address will show here", icon = Icons.Default.LocationOn) }
+                            item { InfoCard(label = "Website URL:", value = "Web URL will show here", icon = Icons.Default.Web) }
                         }
-                        item {
-                            InfoText(
-                                label = "Tertiary Phone:",
-                                value = "Tertiary Phone number will show here"
-                            )
+                        extractedData.isEmpty() && scannedImageUri != null -> {
+                            item {
+                                Spacer(modifier = Modifier.height(48.dp))
+                                NoBusinessCardMessage()
+                            }
                         }
-                        item { InfoText(label = "Email:", value = "Email will show here") }
-                        item { InfoText(label = "Address:", value = "Address will show here") }
-                        item { InfoText(label = "Website URL:", value = "Web URL will show here") }
-                    } else {
-                        item { Spacer(modifier = Modifier.height(18.dp)) }
-                        extractedData["Name"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Name:", value = it) }
-                        }
-                        extractedData["Phone"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Phone:", value = it) }
-                        }
-                        extractedData["Phone2"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Secondary Phone:", value = it) }
-                        }
-                        extractedData["Phone3"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Tertiary Phone:", value = it) }
-                        }
-                        extractedData["Email"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Email:", value = it) }
-                        }
-                        extractedData["Address"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Address:", value = it) }
-                        }
-                        extractedData["Website"]?.takeIf { it.isNotEmpty() }?.let {
-                            item { InfoText(label = "Website URL:", value = it) }
+                        else -> {
+                            item { Spacer(modifier = Modifier.height(18.dp)) }
+                            extractedData["Name"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Name:", value = it, icon = Icons.Default.Person) }
+                            }
+                            extractedData["Phone"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Phone:", value = it, icon = Icons.Default.Phone) }
+                            }
+                            extractedData["Phone2"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Secondary Phone:", value = it, icon = Icons.Default.PermPhoneMsg) }
+                            }
+                            extractedData["Phone3"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Tertiary Phone:", value = it, icon = Icons.Default.AddIcCall) }
+                            }
+                            extractedData["Email"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Email:", value = it, icon = Icons.Default.Email) }
+                            }
+                            extractedData["Address"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Address:", value = it, icon = Icons.Default.LocationOn) }
+                            }
+                            extractedData["Website"]?.takeIf { it.isNotEmpty() }?.let {
+                                item { InfoCard(label = "Website URL:", value = it, icon = Icons.Default.Web) }
+                            }
                         }
                     }
                 }
@@ -264,6 +276,76 @@ fun DocumentScannerScreen() {
     }
 }
 
+@Composable
+fun NoBusinessCardMessage() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.LightGray.copy(alpha = 0.95f)),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Box(
+                modifier = Modifier.padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No Business Card Detected",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = Color.DarkGray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoCard(label: String, value: String, icon: ImageVector) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(4.dp),
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color(0xFFFF6730), // Dark Orange Icon Color
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp)) // Space between icon and text
+            Column {
+                Text(
+                    text = label,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF616161),
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = value,
+                    fontSize = 14.sp,
+                    color = Color(0xFF424242)
+                )
+            }
+        }
+    }
+}
 
 private fun startDocumentScan(
     context: Context,
@@ -317,6 +399,13 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         RegexOption.IGNORE_CASE
     )
 
+    val addressRegex = Regex(
+        "\\b(\\d{1,5}\\s\\w+(\\s\\w+)*\\s(Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Square|Sq|Building|Suite|Floor|Apt|Apartment))\\b",
+        RegexOption.IGNORE_CASE
+    )
+    val postalCodeRegex = Regex("\\b\\d{5}(-\\d{4})?\\b") // Matches US-style ZIP codes
+    val cityStateRegex = Regex("\\b[A-Z][a-z]+,\\s?[A-Z]{2}\\b") // Matches "Los Angeles, CA"
+
     var largestFontSize = 0f
     var nameByFontSize = ""
     var nameByUppercase = ""
@@ -325,7 +414,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
     var detectedWebsite: String? = null
     var detectedCompanyDomain: String? = null
     val possibleNames = mutableListOf<String>()
-    var detectedAddress: String? = null
+    val addressLines = mutableListOf<String>()
 
     for (block in visionText.textBlocks) {
         for (line in block.lines) {
@@ -333,64 +422,72 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
 
             // Skip bullet points, arrows, or dot-prefixed text
             if (textBlock.startsWith("•") || textBlock.startsWith("→") || textBlock.startsWith(".")) {
-                continue // Skip this text
+                continue
             }
 
-            // Check for email and extract the domain
+            // Detect Email
             if (textBlock.contains("@")) {
                 detectedEmails.add(textBlock)
-                detectedCompanyDomain = textBlock.substringAfter("@") // Extract domain from email
+                detectedCompanyDomain = textBlock.substringAfter("@")
                 isBusinessCard = true
                 continue
             }
 
-            // Check for website
+            // Detect Website
             if (websiteRegex.matches(textBlock)) {
                 detectedWebsite = textBlock
                 isBusinessCard = true
                 continue
             }
 
-            // Check for keywords related to business card
+            // Detect Business Keywords
             if (textBlock.contains(keywordRegex)) {
                 isBusinessCard = true
             }
 
-            // Extract phone numbers
-            val sanitizedPhone =
-                textBlock.replace(Regex("[^+\\d,]"), "") // Retain commas for multiple numbers
-            val phoneNumbers =
-                sanitizedPhone.split(",").map { it.trim() }.filter { it.matches(phoneRegex) }
+            // Detect Phone Numbers
+            val sanitizedPhone = textBlock.replace(Regex("[^+\\d,]"), "")
+            val phoneNumbers = sanitizedPhone.split(",").map { it.trim() }.filter { it.matches(phoneRegex) }
             if (phoneNumbers.isNotEmpty()) {
                 detectedPhones.addAll(phoneNumbers)
                 isBusinessCard = true
             }
 
-            // Track largest font size for name extraction
+            // Track Largest Font Size for Name Extraction
             val fontSize = line.boundingBox?.height()?.toFloat() ?: 0f
             if (fontSize > largestFontSize) {
                 largestFontSize = fontSize
                 nameByFontSize = textBlock
             }
 
-            // Check for all uppercase words to detect name
+            // Detect Name in Uppercase
             if (textBlock.isNotEmpty() && textBlock == textBlock.uppercase()) {
                 nameByUppercase = textBlock
             }
 
-            // Collect potential names (excluding email and all-caps names)
+            // Collect Potential Names
             if (textBlock.isNotEmpty() && textBlock != textBlock.uppercase() && !textBlock.contains("@")) {
                 possibleNames.add(textBlock)
             }
 
-            // Detect address-like text (e.g., contains street names or numbers)
-            if (textBlock.contains("Street") || textBlock.contains("Avenue") || textBlock.contains("Blvd")) {
-                detectedAddress = textBlock
+            // **Enhanced Address Detection**
+            val isAddress = addressRegex.containsMatchIn(textBlock) ||
+                    postalCodeRegex.containsMatchIn(textBlock) ||
+                    cityStateRegex.containsMatchIn(textBlock)
+
+            if (isAddress) {
+                addressLines.add(textBlock)
             }
         }
     }
 
-    // If business card is detected, extract details
+    // **Combine Consecutive Address Lines**
+    val detectedAddress = if (addressLines.isNotEmpty()) {
+        addressLines.joinToString(", ")
+    } else {
+        null
+    }
+
     if (isBusinessCard && detectedPhones.isNotEmpty()) {
         details["Phone"] = detectedPhones.getOrNull(0) ?: ""  // Primary Phone
         details["Phone2"] = detectedPhones.getOrNull(1) ?: "" // Secondary Phone
@@ -405,24 +502,26 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         details["Website"] = detectedWebsite
     }
 
-    // Extract the name using the most appropriate method (font size or uppercase)
+    if (!detectedAddress.isNullOrEmpty()) {
+        details["Address"] = detectedAddress
+    }
+
+    // Extract Name
     var detectedName = when {
         nameByFontSize.isNotEmpty() -> nameByFontSize
         nameByUppercase.isNotEmpty() -> nameByUppercase
         else -> ""
     }
 
-    // Avoid using company email domain, all-caps names, and address-like text as contact name
     if (detectedName.isNotEmpty()) {
         if (detectedCompanyDomain?.let { detectedName.contains(it, ignoreCase = true) } == true ||
             detectedName == detectedName.uppercase() ||
             detectedName.contains("Street") || detectedName.contains("Avenue") || detectedName.contains("Blvd")) {
-            // Skip using all-caps company name, address-like text, or name matching the email domain
             detectedName = ""
         }
     }
 
-    // Check for Name-Email Similarity (email prefix and extracted name)
+    // Name from Email Prefix
     if (detectedName.isEmpty() && detectedEmails.isNotEmpty()) {
         val emailPrefix = detectedEmails.first().substringBefore("@")
         possibleNames.firstOrNull { it.contains(emailPrefix, ignoreCase = true) }?.let {
@@ -430,7 +529,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         }
     }
 
-    // If no valid name found, try alternative names from the text
+    // Backup Name Extraction
     if (detectedName.isEmpty()) {
         detectedName = possibleNames.firstOrNull { it.isNotEmpty() } ?: ""
     }
@@ -441,7 +540,6 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
 
     return if (isBusinessCard) details else emptyMap()
 }
-
 
 private fun saveContactToPhone(
     context: Context,

@@ -30,7 +30,7 @@ fun BottomNavigationBar(
 ) {
     BottomAppBar(
         containerColor = Color.White,
-        modifier = Modifier.height(110.dp).padding(bottom = 10.dp)
+        modifier = Modifier.height(115.dp).padding(bottom = 10.dp)
     ) {
         Row(
             modifier = Modifier

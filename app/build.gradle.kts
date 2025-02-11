@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.scan2contact"
+        applicationId = "com.zimneos.scan2contact"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -74,4 +74,6 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation (libs.androidx.animation)
+
+    implementation ("androidx.compose.material:material-icons-extended:1.4.3")
 }
