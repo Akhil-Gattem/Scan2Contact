@@ -12,7 +12,7 @@ android {
         applicationId = "com.zimneos.scan2contact"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -75,5 +75,5 @@ dependencies {
 
     implementation (libs.androidx.animation)
 
-    implementation ("androidx.compose.material:material-icons-extended:1.4.3")
+    implementation (libs.androidx.material.icons.extended)
 }
