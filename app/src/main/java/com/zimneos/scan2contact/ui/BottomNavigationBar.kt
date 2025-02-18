@@ -60,7 +60,7 @@ fun BottomNavigationBar(
                 modifier = Modifier
                     .size(56.dp)
                     .offset(y = (-14).dp)
-                    .background(Color(0xFFFF6F30), shape = CircleShape)
+                    .background(Color(0xFF6265FE), shape = CircleShape)
                     .padding(8.dp)
             ) {
                 Icon(
