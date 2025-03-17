@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddIcCall
@@ -38,6 +40,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ScreenSearchDesktop
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.material.icons.filled.Whatsapp
 import androidx.compose.material.icons.filled.Work
@@ -133,351 +136,368 @@ fun DocumentScannerScreen() {
             }
         }
     )
-
-    Scaffold { paddingValues ->
-        Box(
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                onCameraClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    startDocumentScan(context) { intentSenderRequest ->
+                        scannerLauncher.launch(intentSenderRequest)
+                    }
+                },
+                onPhoneClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    extractedText.value?.let { contactInfo ->
+                        contactInfo["Phone"]?.let { phoneNumber ->
+                            makePhoneCall(context, phoneNumber)
+                        }
+                    } ?: run {
+                        Toast.makeText(
+                            context,
+                            "Please scan a card first",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                onChatClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    extractedText.value?.let { contactInfo ->
+                        contactInfo["Phone"]?.let { phoneNumber ->
+                            openSmsApp(context, phoneNumber)
+                        }
+                    } ?: run {
+                        Toast.makeText(
+                            context,
+                            "Please scan a card first",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                onContactsClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (extractedText.value != null) {
+                        scope.launch {
+                            showDialog.value = true
+                        }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Please scan a card first",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                onShareClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    extractedText.value?.let { contactInfo ->
+                        shareContact(context, contactInfo)
+                    } ?: run {
+                        Toast.makeText(
+                            context,
+                            "Please scan a card first",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Image(
+            painter = painterResource(R.drawable.bg),
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(0.1f),
+            contentDescription = "Background Image",
+            contentScale = ContentScale.FillHeight
+        )
+        if (showDialog.value) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            extractedText.value?.let { contactInfo ->
+                SaveContactDialog(contactInfo, context, showDialog)
+            }
+        }
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.Top,
         ) {
-            Scaffold(
-                bottomBar = {
-                    BottomNavigationBar(
-                        onCameraClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            startDocumentScan(context) { intentSenderRequest ->
-                                scannerLauncher.launch(intentSenderRequest)
-                            }
-                        },
-                        onPhoneClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            extractedText.value?.let { contactInfo ->
-                                contactInfo["Phone"]?.let { phoneNumber ->
-                                    makePhoneCall(context, phoneNumber)
-                                }
-                            }
-                        },
-                        onChatClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            extractedText.value?.let { contactInfo ->
-                                contactInfo["Phone"]?.let { phoneNumber ->
-                                    openSmsApp(context, phoneNumber)
-                                }
-                            }
-                        },
-                        onContactsClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            scope.launch {
-                                showDialog.value = true
-                            }
-                        },
-                        onShareClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            extractedText.value?.let { contactInfo ->
-                                shareContact(context, contactInfo)
-                            }
-                        }
+            item {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 8.dp ,bottom = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.scannet),
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 96.dp),
+                        contentScale = ContentScale.FillWidth
                     )
                 }
-            ) { paddingValues ->
-                Image(
-                    painter = painterResource(R.drawable.bg),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(0.1f),
-                    contentDescription = "Background Image",
-                    contentScale = ContentScale.FillHeight
-                )
-                if (showDialog.value) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    extractedText.value?.let { contactInfo ->
-                        SaveContactDialog(contactInfo, context, showDialog)
+            }
+
+            if (scannedImageUri == null && !isScanning.value) {
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+                item {
+                    InfoCard(
+                        label = "Name:",
+                        value = "Name will show here",
+                        icon = Icons.Default.Person
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Designation:",
+                        value = "Designation will show here",
+                        icon = Icons.Default.Work
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Phone:",
+                        value = "Phone number will show here",
+                        icon = Icons.Default.Phone
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Secondary Phone:",
+                        value = "Secondary Phone number will show here",
+                        icon = Icons.Default.PermPhoneMsg
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Tertiary Phone:",
+                        value = "Tertiary Phone number will show here",
+                        icon = Icons.Default.AddIcCall
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Email:",
+                        value = "Email will show here",
+                        icon = Icons.Default.Email
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Address:",
+                        value = "Address will show here",
+                        icon = Icons.Default.LocationOn
+                    )
+                }
+                item {
+                    InfoCard(
+                        label = "Website URL:",
+                        value = "Web URL will show here",
+                        icon = Icons.Default.Web
+                    )
+                }
+            }
+
+            if (isScanning.value) {
+                item {
+                    Box(
+                        modifier = Modifier
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.Top,
-                ) {
-                    item {
-                            Box(
-                                modifier = Modifier
-                                    .padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
+            } else {
+                val extractedData = extractedText.value ?: emptyMap()
+                when {
+                    extractedData.isEmpty() -> {
+                        if (!isScanning.value && !isFirstLaunch.value) {
+                            item {
+                                Spacer(modifier = Modifier.height(78.dp))
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                NoBusinessCardMessage()
+                            }
+                        }
+                    }
+
+                    else -> {
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
+                        item {
+                            scannedImageUri?.let {
                                 Image(
-                                    painter = painterResource(id = R.drawable.scannet),
-                                    contentDescription = stringResource(R.string.app_name),
-                                    modifier = Modifier.fillMaxWidth().padding(end = 78.dp),
-                                    contentScale = ContentScale.FillWidth
+                                    painter = rememberAsyncImagePainter(it),
+                                    contentDescription = "Captured Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .aspectRatio(16 / 9f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .border(
+                                            2.dp,
+                                            Color(0xFF6265FE),
+                                            RoundedCornerShape(8.dp)
+                                        )
                                 )
                             }
-                    }
-
-                    if (scannedImageUri == null && !isScanning.value) {
-                        item { Spacer(modifier = Modifier.height(16.dp)) }
-                        item {
-                            InfoCard(
-                                label = "Name:",
-                                value = "Name will show here",
-                                icon = Icons.Default.Person
-                            )
                         }
-                        item {
-                            InfoCard(
-                                label = "Designation:",
-                                value = "Designation will show here",
-                                icon = Icons.Default.Work
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Phone:",
-                                value = "Phone number will show here",
-                                icon = Icons.Default.Phone
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Secondary Phone:",
-                                value = "Secondary Phone number will show here",
-                                icon = Icons.Default.PermPhoneMsg
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Tertiary Phone:",
-                                value = "Tertiary Phone number will show here",
-                                icon = Icons.Default.AddIcCall
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Email:",
-                                value = "Email will show here",
-                                icon = Icons.Default.Email
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Address:",
-                                value = "Address will show here",
-                                icon = Icons.Default.LocationOn
-                            )
-                        }
-                        item {
-                            InfoCard(
-                                label = "Website URL:",
-                                value = "Web URL will show here",
-                                icon = Icons.Default.Web
-                            )
-                        }
-                    }
-
-                    if (isScanning.value) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
+                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                        extractedData["Name"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Name:",
+                                    value = it,
+                                    icon = Icons.Default.Person,
+                                    actionIcon = Icons.Default.ContentCopy,
+                                    onActionClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        coroutineScope.launch {
+                                            clipboardManager.setText(AnnotatedString(it))
+                                        }
+                                    }
+                                )
                             }
                         }
-                    } else {
-                        val extractedData = extractedText.value ?: emptyMap()
-                        when {
-                            extractedData.isEmpty() -> {
-                                if (!isScanning.value && !isFirstLaunch.value) {
-                                    item {
-                                        Spacer(modifier = Modifier.height(48.dp))
-                                        NoBusinessCardMessage()
+                        extractedData["Designation"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Designation:",
+                                    value = it,
+                                    icon = Icons.Default.Work,
+                                    actionIcon = Icons.Default.PersonSearch,
+                                    onActionClick = {
+                                        val searchQuery = Uri.encode("${extractedData["Name"]} $it")
+                                        val intent = Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://www.linkedin.com/search/results/all/?keywords=$searchQuery")
+                                        )
+                                        context.startActivity(intent)
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     }
-                                }
+                                )
                             }
-
-                            else -> {
-                                item { Spacer(modifier = Modifier.height(12.dp)) }
-                                item {
-                                    scannedImageUri?.let {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(it),
-                                            contentDescription = "Captured Image",
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(200.dp)
-                                                .aspectRatio(16 / 9f)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .border(
-                                                    2.dp,
-                                                    Color(0xFF6265FE),
-                                                    RoundedCornerShape(8.dp)
-                                                )
+                        }
+                        extractedData["Phone"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Phone:",
+                                    value = it,
+                                    icon = Icons.Default.Phone,
+                                    actionIcon = Icons.Default.Whatsapp,
+                                    onActionClick = {
+                                        extractedData["Phone"]?.let { phoneNumber ->
+                                            openWhatsAppChat(context, phoneNumber)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        extractedData["Phone2"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Secondary Phone:",
+                                    value = it,
+                                    icon = Icons.Default.PermPhoneMsg,
+                                    actionIcon = Icons.Default.Whatsapp,
+                                    onActionClick = {
+                                        extractedData["Phone2"]?.let { phoneNumber ->
+                                            openWhatsAppChat(context, phoneNumber)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        extractedData["Phone3"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Tertiary Phone:",
+                                    value = it,
+                                    icon = Icons.Default.AddIcCall,
+                                    actionIcon = Icons.Default.Whatsapp,
+                                    onActionClick = {
+                                        extractedData["Phone3"]?.let { phoneNumber ->
+                                            openWhatsAppChat(context, phoneNumber)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        extractedData["Email"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Email:",
+                                    value = it,
+                                    icon = Icons.Default.Email,
+                                    actionIcon = Icons.Default.Email,
+                                    onActionClick = {
+                                        context.startActivity(
+                                            Intent(
+                                                Intent.ACTION_VIEW,
+                                                Uri.parse("mailto:${extractedData["Email"]}")
+                                            )
                                         )
                                     }
-                                }
-                                item { Spacer(modifier = Modifier.height(24.dp)) }
-                                extractedData["Name"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Name:",
-                                            value = it,
-                                            icon = Icons.Default.Person,
-                                            actionIcon = Icons.Default.ContentCopy,
-                                            onActionClick = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                coroutineScope.launch {
-                                                    clipboardManager.setText(AnnotatedString(it))
-                                                }
-                                            }
+                                )
+                            }
+                        }
+                        extractedData["Address"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Address:",
+                                    value = it,
+                                    icon = Icons.Default.LocationOn,
+                                    actionIcon = Icons.Default.Navigation,
+                                    onActionClick = {
+                                        val uri = Uri.encode(extractedData["Address"])
+                                        val mapIntent = Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://www.google.com/maps/search/?api=1&query=$uri")
                                         )
-                                    }
-                                }
-                                extractedData["Designation"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Designation:",
-                                            value = it,
-                                            icon = Icons.Default.Work,
-                                            actionIcon = Icons.Default.PersonSearch,
-                                            onActionClick = {
-                                                val searchQuery =
-                                                    Uri.encode("${extractedData["Name"]} $it")
-                                                val intent = Intent(
-                                                    Intent.ACTION_VIEW,
-                                                    Uri.parse("https://www.google.com/search?q=$searchQuery")
-                                                )
-                                                context.startActivity(intent)
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            }
-                                        )
-                                    }
-                                }
-                                extractedData["Phone"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Phone:",
-                                            value = it,
-                                            icon = Icons.Default.Phone,
-                                            actionIcon = Icons.Default.Whatsapp,
-                                            onActionClick = {
-                                                extractedData["Phone"]?.let { phoneNumber ->
-                                                    openWhatsAppChat(context, phoneNumber)
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                                extractedData["Phone2"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Secondary Phone:",
-                                            value = it,
-                                            icon = Icons.Default.PermPhoneMsg,
-                                            actionIcon = Icons.Default.Whatsapp,
-                                            onActionClick = {
-                                                extractedData["Phone2"]?.let { phoneNumber ->
-                                                    openWhatsAppChat(context, phoneNumber)
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                                extractedData["Phone3"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Tertiary Phone:",
-                                            value = it,
-                                            icon = Icons.Default.AddIcCall,
-                                            actionIcon = Icons.Default.Whatsapp,
-                                            onActionClick = {
-                                                extractedData["Phone3"]?.let { phoneNumber ->
-                                                    openWhatsAppChat(context, phoneNumber)
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                                extractedData["Email"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Email:",
-                                            value = it,
-                                            icon = Icons.Default.Email,
-                                            actionIcon = Icons.Default.Email,
-                                            onActionClick = {
-                                                context.startActivity(
-                                                    Intent(
-                                                        Intent.ACTION_VIEW,
-                                                        Uri.parse("mailto:${extractedData["Email"]}")
-                                                    )
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                                extractedData["Address"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Address:",
-                                            value = it,
-                                            icon = Icons.Default.LocationOn,
-                                            actionIcon = Icons.Default.Navigation,
-                                            onActionClick = {
-                                                val uri = Uri.encode(extractedData["Address"])
-                                                val mapIntent = Intent(
+                                        mapIntent.setPackage("com.google.android.apps.maps")
+                                        if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                            context.startActivity(mapIntent)
+                                        } else {
+                                            context.startActivity(
+                                                Intent(
                                                     Intent.ACTION_VIEW,
                                                     Uri.parse("https://www.google.com/maps/search/?api=1&query=$uri")
                                                 )
-                                                mapIntent.setPackage("com.google.android.apps.maps")
-                                                if (mapIntent.resolveActivity(context.packageManager) != null) {
-                                                    context.startActivity(mapIntent)
-                                                } else {
-                                                    context.startActivity(
-                                                        Intent(
-                                                            Intent.ACTION_VIEW,
-                                                            Uri.parse("https://www.google.com/maps/search/?api=1&query=$uri")
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                        )
+                                            )
+                                        }
                                     }
-                                }
-                                extractedData["Website"]?.takeIf { it.isNotEmpty() }?.let {
-                                    item {
-                                        InfoCard(
-                                            label = "Website URL:",
-                                            value = it,
-                                            icon = Icons.Default.Web,
-                                            actionIcon = Icons.Default.ScreenSearchDesktop,
-                                            onActionClick = {
-                                                val url = extractedData["Website"]?.let {
-                                                    if (it.startsWith("http://") || it.startsWith("https://")) it else "https://$it"
-                                                } ?: "https://www.google.com"
+                                )
+                            }
+                        }
+                        extractedData["Website"]?.takeIf { it.isNotEmpty() }?.let {
+                            item {
+                                InfoCard(
+                                    label = "Website URL:",
+                                    value = it,
+                                    icon = Icons.Default.Web,
+                                    actionIcon = Icons.Default.ScreenSearchDesktop,
+                                    onActionClick = {
+                                        val url = extractedData["Website"]?.let {
+                                            if (it.startsWith("http://") || it.startsWith("https://")) it else "https://$it"
+                                        } ?: "https://www.google.com"
 
-                                                try {
-                                                    context.startActivity(
-                                                        Intent(
-                                                            Intent.ACTION_VIEW,
-                                                            Uri.parse(url)
-                                                        )
-                                                    )
-                                                } catch (e: Exception) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "No browser found to open URL",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-
-                                        )
+                                        try {
+                                            context.startActivity(
+                                                Intent(
+                                                    Intent.ACTION_VIEW,
+                                                    Uri.parse(url)
+                                                )
+                                            )
+                                        } catch (e: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                "No browser found to open URL",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
-                                }
+
+                                )
                             }
                         }
                     }
@@ -485,8 +505,8 @@ fun DocumentScannerScreen() {
             }
         }
     }
-}
 
+}
 
 @Composable
 fun NoBusinessCardMessage() {
@@ -496,24 +516,32 @@ fun NoBusinessCardMessage() {
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.LightGray.copy(alpha = 0.95f)),
-            modifier = Modifier.padding(16.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier.padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No Business Card Detected",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = Color.DarkGray
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.WarningAmber,
+                contentDescription = "Warning",
+                tint =  Color(0xFF6265FE),
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No Business Card Found",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = Color.DarkGray
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "We couldn't find any business card, Try adding a new card.",
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
         }
     }
 }
@@ -544,14 +572,22 @@ fun InfoCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f) // Expands to take up available space
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Color(0xFF6265FE),
-                    modifier = Modifier.size(28.dp)
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color(0xFF6264FE).copy(alpha = 0.25f), shape = CircleShape)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = Color(0xFF6265FE),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
@@ -588,8 +624,6 @@ fun InfoCard(
     }
 }
 
-
-
 private fun startDocumentScan(
     context: Context,
     onScannerReady: (IntentSenderRequest) -> Unit
@@ -612,8 +646,11 @@ private fun startDocumentScan(
         }
 }
 
-
-private fun extractTextFromImage(context: Context, uri: Uri, onResult: (Map<String, String>) -> Unit) {
+private fun extractTextFromImage(
+    context: Context,
+    uri: Uri,
+    onResult: (Map<String, String>) -> Unit
+) {
     try {
         val image: InputImage = InputImage.fromFilePath(context, uri)
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -638,10 +675,9 @@ private fun extractTextFromImage(context: Context, uri: Uri, onResult: (Map<Stri
     }
 }
 
-
-private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
+fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
     val details = mutableMapOf<String, String>()
-    var isBusinessCard = false
+    var isBusinessCardCount = 0
 
     val phoneRegex = Regex("^\\+?\\d{7,15}$")
     val websiteRegex = Regex("^(https?://|www\\.)[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}$")
@@ -649,7 +685,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         "\\b(Phone|Mobile|Contact|Email|Website|Company|Address|Fax|CEO|Manager|Founder|CTO|Director|VP|Consultant|Designation|Title|Job Title)\\b",
         RegexOption.IGNORE_CASE
     )
-    val designationTerms = listOf( // Using list of terms instead of Regex for Levenshtein
+    val designationTerms = listOf(
         "President",
         "Vice President",
         "VP",
@@ -808,8 +844,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
     )
     val popularIndianCities = listOf(
         "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata",
-        "Surat", "Pune", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Bhopal", "noida",
-        "Patna", "Vadodara", "Ghaziabad", "Ludhiana", "Coimbatore", "Agra", "Visakhapatnam",
+        "Surat", "Pune", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Bhopal", "noida", "Vadodara", "Ghaziabad", "Ludhiana", "Coimbatore", "Agra", "Visakhapatnam",
         "Kochi", "Madurai", "Varanasi", "Meerut", "Faridabad", "Rajkot", "Jamshedpur",
         "Srinagar", "Jabalpur", "Asansol", "Vasai-Virar City", "Allahabad", "Dhanbad",
         "Aurangabad", "Amritsar", "Jodhpur", "Ranchi", "Raipur", "Guwahati", "Solapur",
@@ -819,11 +854,11 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         "Jodhpur", "Raipur", "Guwahati", "Solapur", "Hubli–Dharwad", "Chandigarh",
         "Tiruchirappalli", "Bareilly", "Moradabad", "Mysore", "Gurgaon", "Aligarh",
         "Jalandhar", "Jamshedpur", "Udaipur", "Kakinada", "Dehradun",
-        "Vijayawada"
+        "Vijayawada", "Amsterdam"
     )
 
-    val allCities = popularIndianCities + countryNames.map { it ->
-        it.replaceFirstChar {
+    val allCities = popularIndianCities + countryNames.map { countryName ->
+        countryName.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
         }
     }
@@ -839,6 +874,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
     val possibleNames = mutableListOf<String>()
     val addressLines = mutableListOf<String>()
     var detectedDesignation: String? = null
+    val detectedLocationNames = mutableListOf<String>()
 
     for (block in visionText.textBlocks) {
         for (line in block.lines) {
@@ -859,21 +895,21 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
                     "phone", "mobile", "contact" -> {
                         val phoneNumbers = extractPhoneNumbers(dataPart, phoneRegex)
                         detectedPhones.addAll(phoneNumbers)
-                        isBusinessCard = true
+                        isBusinessCardCount += 1
                     }
 
                     "email" -> {
                         if (dataPart.contains("@")) {
                             detectedEmails.add(dataPart)
                             detectedCompanyDomain = dataPart.substringAfter("@")
-                            isBusinessCard = true
+                            isBusinessCardCount += 1
                         }
                     }
 
                     "website" -> {
                         if (websiteRegex.matches(dataPart)) {
                             detectedWebsite = dataPart
-                            isBusinessCard = true
+                            isBusinessCardCount += 1
                         }
                     }
 
@@ -885,7 +921,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
                                 indianStates.any { dataPart.lowercase().contains(it) }
                         if (isAddressData) {
                             addressLines.add(dataPart)
-                            isBusinessCard = true
+                            isBusinessCardCount += 1
                         }
                     }
 
@@ -894,7 +930,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
                             allCities.any { city -> dataPart.contains(city, ignoreCase = true) }
                         if (!addressRegex.matches(dataPart) && !isCity) { // Address and City check for designation
                             detectedDesignation = dataPart
-                            isBusinessCard = true
+                            isBusinessCardCount += 1
                         }
                     }
                 }
@@ -905,36 +941,73 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
             if (textBlock.contains("@")) {
                 detectedEmails.add(textBlock)
                 detectedCompanyDomain = textBlock.substringAfter("@")
-                isBusinessCard = true
+                isBusinessCardCount += 1
                 continue
             }
 
             if (websiteRegex.matches(textBlock)) {
                 detectedWebsite = textBlock
-                isBusinessCard = true
+                isBusinessCardCount += 1
                 continue
             }
 
             val sanitizedPhone = textBlock.replace(Regex("[^+\\d,]"), "")
-            val phoneNumbers = sanitizedPhone.split(",").map { it.trim() }.filter { it.matches(phoneRegex) }
+            val phoneNumbers =
+                sanitizedPhone.split(",").map { it.trim() }.filter { it.matches(phoneRegex) }
             if (phoneNumbers.isNotEmpty()) {
                 detectedPhones.addAll(phoneNumbers)
-                isBusinessCard = true
+                isBusinessCardCount += 1
             }
 
             val cityRegex =
                 Regex("\\b(${popularIndianCities.joinToString("|")})\\b", RegexOption.IGNORE_CASE)
 
-            val isAddress = addressRegex.containsMatchIn(textBlock) ||
+            var isAddress = addressRegex.containsMatchIn(textBlock) ||
                     postalCodeRegex.containsMatchIn(textBlock) ||
                     cityStateRegex.containsMatchIn(textBlock) ||
                     countryNames.any { country -> textBlock.lowercase().contains(country) } ||
                     indianStates.any { state -> textBlock.lowercase().contains(state) } ||
                     cityRegex.containsMatchIn(textBlock)
 
+            var locationAdded = false
+
+            if (!locationAdded && cityRegex.containsMatchIn(textBlock)) {
+                popularIndianCities.forEach { city ->
+                    if (textBlock.contains(city, ignoreCase = true)) {
+                        detectedLocationNames.add(city)
+                        locationAdded = true
+                        return@forEach
+                    }
+                }
+                if (locationAdded) isAddress = true
+            }
+
+            if (!locationAdded && indianStates.any { state -> textBlock.lowercase().contains(state.lowercase()) }) {
+                indianStates.forEach { state ->
+                    if (textBlock.lowercase().contains(state.lowercase())) {
+                        detectedLocationNames.add(state)
+                        locationAdded = true
+                        return@forEach
+                    }
+                }
+                if (locationAdded) isAddress = true
+            }
+
+            if (!locationAdded && countryNames.any { country -> textBlock.lowercase().contains(country.lowercase()) }) {
+                countryNames.forEach { country ->
+                    if (textBlock.lowercase().contains(country.lowercase())) {
+                        detectedLocationNames.add(country.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }) // Keep consistent with city name capitalization
+                        locationAdded = true
+                        return@forEach
+                    }
+                }
+                if (locationAdded) isAddress = true
+            }
+
+
             if (isAddress) {
                 addressLines.add(textBlock)
-                isBusinessCard = true
+                isBusinessCardCount += 1
             }
 
             val fontSize = line.boundingBox?.height()?.toFloat() ?: 0f
@@ -947,23 +1020,21 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
                 nameByUppercase = textBlock
             }
 
-            if (textBlock.isNotEmpty() &&
+            if (
+                textBlock.isNotEmpty() &&
                 !textBlock.contains("@") &&
                 !textBlock.contains(keywordRegex) &&
                 !lineContainsPhoneNumber(textBlock, phoneRegex) &&
                 !websiteRegex.matches(textBlock) &&
-                !(addressRegex.containsMatchIn(textBlock) ||
-                        postalCodeRegex.containsMatchIn(textBlock) ||
-                        cityStateRegex.containsMatchIn(textBlock) ||
-                        countryNames.any { country -> textBlock.lowercase().contains(country) }) ||
-                indianStates.any { state -> textBlock.lowercase().contains(state) } &&
+                !(isAddress) &&
                 textBlock.matches(Regex(".*[a-zA-Z].*"))
             ) {
                 possibleNames.add(textBlock)
             }
 
+
             if (textBlock.contains(keywordRegex)) {
-                isBusinessCard = true
+                isBusinessCardCount += 1
             }
         }
     }
@@ -992,14 +1063,11 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
                 if (detectedDesignation.isNullOrEmpty() && !addressLines.contains(textBlock) && !addressRegex.matches(
                         textBlock
                     ) && !isCity
-                ) { // Address and City check for designation
+                ) {
                     designationTerms.forEach { term ->
                         if (textBlock.contains(term, ignoreCase = true)) {
                             detectedDesignation = textBlock
-                            Log.d(
-                                "OCR_DEBUG",
-                                "Designation FOUND (Contains): '$detectedDesignation' (Term: '$term')"
-                            )
+
                             return@forEach
                         }
                     }
@@ -1097,15 +1165,13 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         }
     }
 
-    if (detectedName.isEmpty() || detectedName.length < 3) { // Name length check and fallback mechanism
+    if (detectedName.isEmpty() || detectedName.length < 3) {
         val longerPossibleNames = possibleNames.filter { it.length >= 3 }
         detectedName = when {
             nameByFontSize.length >= 3 -> nameByFontSize
             nameByUppercase.length >= 3 -> nameByUppercase
-            longerPossibleNames.isNotEmpty() -> longerPossibleNames.firstOrNull()
-                ?: "" // Prioritize longer names from possible names
-            possibleNames.isNotEmpty() -> possibleNames.firstOrNull()
-                ?: "" // If no longer names, fallback to any possible name.
+            longerPossibleNames.isNotEmpty() -> longerPossibleNames.firstOrNull() ?: ""
+            possibleNames.isNotEmpty() -> possibleNames.firstOrNull() ?: ""
             else -> ""
         }
     }
@@ -1178,7 +1244,7 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
         }
     }
 
-    if (isBusinessCard) {
+    if (isBusinessCardCount > 2) {
         detectedPhones.takeIf { it.isNotEmpty() }?.let {
             details["Phone"] = it.getOrNull(0) ?: ""
             details["Phone2"] = it.getOrNull(1) ?: ""
@@ -1191,23 +1257,31 @@ private fun extractBusinessCardDetails(visionText: Text): Map<String, String> {
 
         detectedWebsite?.let { details["Website"] = it }
 
-        if (addressLines.isNotEmpty()) {
-            details["Address"] =
-                addressLines.first { it.isNotBlank() && it.matches(Regex(".*[a-zA-Z].*")) }.trim()
-        }
-
         if (detectedName.isNotEmpty()) {
             details["Name"] = detectedName
         }
 
         detectedDesignation?.let { designation ->
             if (designation.isNotEmpty()) {
-                details["Designation"] = designation
+                details["Designation"] = designation.replaceFirstChar { it.uppercaseChar() }
+            }
+        }
+
+        if (detectedLocationNames.isNotEmpty()) {
+            if (popularIndianCities.any { city -> detectedLocationNames.contains(city) }) {
+                details["Address"] = popularIndianCities.first { city -> detectedLocationNames.contains(city) }
+                    .replaceFirstChar { it.uppercaseChar() }
+            } else if (indianStates.any { state -> detectedLocationNames.contains(state) }) {
+                details["Address"] = indianStates.first { state -> detectedLocationNames.contains(state) }
+                    .replaceFirstChar { it.uppercaseChar() }
+            } else if (countryNames.any { country -> detectedLocationNames.map { it.lowercase() }.contains(country) }) {
+                details["Address"] = countryNames.first { country -> detectedLocationNames.map { it.lowercase() }.contains(country) }
+                    .replaceFirstChar { it.uppercaseChar() }
             }
         }
     }
 
-    return if (isBusinessCard) details else emptyMap()
+    return if (isBusinessCardCount > 2) details else emptyMap()
 }
 
 private fun processLabelValuePair(text: String): Pair<String, String>? {
@@ -1221,7 +1295,6 @@ private fun processLabelValuePair(text: String): Pair<String, String>? {
     }
     return null
 }
-
 
 fun lineContainsPhoneNumber(text: String, phoneRegex: Regex): Boolean {
     val sanitizedPhone = text.replace(Regex("[^+\\d,]"), "")
@@ -1298,7 +1371,11 @@ private fun saveContactToPhone(
 }
 
 @Composable
-private fun SaveContactDialog(contactInfo: Map<String, String>, context: Context, showDialog: MutableState<Boolean>) {
+private fun SaveContactDialog(
+    contactInfo: Map<String, String>,
+    context: Context,
+    showDialog: MutableState<Boolean>
+) {
     if (showDialog.value) {
         AlertDialog(
             onDismissRequest = { showDialog.value = false },
@@ -1316,35 +1393,58 @@ private fun SaveContactDialog(contactInfo: Map<String, String>, context: Context
                 ) {
                     contactInfo["Name"]?.takeIf { it.isNotEmpty() }?.let {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Filled.Person, contentDescription = "Name Icon", modifier = Modifier.size(24.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = "Name Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Name: $it", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     contactInfo["Phone"]?.takeIf { it.isNotEmpty() }?.let {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone Icon", modifier = Modifier.size(24.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Phone,
+                                contentDescription = "Phone Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Primary Phone: $it", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     contactInfo["Phone2"]?.takeIf { it.isNotEmpty() }?.let {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone2 Icon", modifier = Modifier.size(24.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Phone,
+                                contentDescription = "Phone2 Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Secondary Phone: $it", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Secondary Phone: $it",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                     contactInfo["Phone3"]?.takeIf { it.isNotEmpty() }?.let {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Filled.Phone, contentDescription = "Phone3 Icon", modifier = Modifier.size(24.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Phone,
+                                contentDescription = "Phone3 Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Tertiary Phone: $it", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     contactInfo["Email"]?.takeIf { it.isNotEmpty() }?.let {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Filled.Email, contentDescription = "Email Icon", modifier = Modifier.size(24.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Email,
+                                contentDescription = "Email Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Email: $it", style = MaterialTheme.typography.bodyMedium)
                         }
@@ -1409,7 +1509,6 @@ private fun SaveContactDialog(contactInfo: Map<String, String>, context: Context
     }
 }
 
-
 private fun makePhoneCall(context: Context, phoneNumber: String) {
     val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
     context.startActivity(dialIntent)
@@ -1448,4 +1547,3 @@ private fun shareContact(context: Context, contactInfo: Map<String, String>) {
         context.startActivity(Intent.createChooser(shareIntent, "Share Contact"))
     }
 }
-
